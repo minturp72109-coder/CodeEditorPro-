@@ -54,16 +54,9 @@ fun MainScreen(viewModel: EditorViewModel) {
     val currentContext = LocalContext.current
     val scope = rememberCoroutineScope()
 
-    // A helper to safely log user actions and show ads after 3-5 operations
+    // A helper to safely log user actions
     val logAction = {
-        var context = currentContext
-        while (context is android.content.ContextWrapper) {
-            if (context is android.app.Activity) {
-                AdManager.logUserAction(context)
-                break
-            }
-            context = context.baseContext
-        }
+        AdManager.logUserAction(currentContext)
     }
 
     // --- State collections ---
@@ -235,7 +228,11 @@ fun MainScreen(viewModel: EditorViewModel) {
                                     Icon(Icons.Default.PlayArrow, contentDescription = "Save and Run Code", tint = Color(0xFFD0BCFF))
                                 }
                             }
-                            IconButton(onClick = { showSettingsDialog = true }) {
+                            IconButton(onClick = {
+                                AdManager.showAdIfEligible(currentContext) {
+                                    showSettingsDialog = true
+                                }
+                            }) {
                                 Icon(Icons.Default.Settings, contentDescription = "Editor Settings", tint = Color(0xFFE6E1E5))
                             }
                         },
@@ -264,7 +261,13 @@ fun MainScreen(viewModel: EditorViewModel) {
                         NavigationBarItem(
                             selected = isSelected,
                             onClick = { 
-                                viewModel.setActivePanel(index)
+                                if (index == 0 && activePanel != 0) {
+                                    AdManager.showAdIfEligible(currentContext) {
+                                        viewModel.setActivePanel(0)
+                                    }
+                                } else {
+                                    viewModel.setActivePanel(index)
+                                }
                                 logAction()
                             },
                             icon = {
@@ -391,8 +394,10 @@ fun MainScreen(viewModel: EditorViewModel) {
                 projects = projects,
                 activeProject = activeProject,
                 onSelect = {
-                    viewModel.selectProject(it)
                     showProjectSelectDialog = false
+                    AdManager.showAdIfEligible(currentContext) {
+                        viewModel.selectProject(it)
+                    }
                     logAction()
                 },
                 onDelete = { viewModel.deleteProject(it) },
@@ -581,6 +586,9 @@ fun ExplorerTab(
                                 activeProject?.let {
                                     // Make a mock trigger for import/export zip
                                     viewModel.createProject("Imported Zip Project")
+                                    AdManager.showAdIfEligible(currentContext) {
+                                        // Completed import flow
+                                    }
                                 }
                             },
                             contentPadding = PaddingValues(horizontal = 12.dp, vertical = 6.dp),
@@ -594,8 +602,14 @@ fun ExplorerTab(
                             onClick = {
                                 val dest = File(currentContext.cacheDir, "${activeProject?.name ?: "project"}.zip")
                                 viewModel.exportActiveProjectToZip(dest) { ok ->
-                                    if (ok) Toast.makeText(currentContext, "Exported successfully to: ${dest.name}", Toast.LENGTH_LONG).show()
-                                    else Toast.makeText(currentContext, "Export failure", Toast.LENGTH_SHORT).show()
+                                    if (ok) {
+                                        Toast.makeText(currentContext, "Exported successfully to: ${dest.name}", Toast.LENGTH_LONG).show()
+                                        AdManager.showAdIfEligible(currentContext) {
+                                            // Completed export flow
+                                        }
+                                    } else {
+                                        Toast.makeText(currentContext, "Export failure", Toast.LENGTH_SHORT).show()
+                                    }
                                 }
                             },
                             contentPadding = PaddingValues(horizontal = 12.dp, vertical = 6.dp),
