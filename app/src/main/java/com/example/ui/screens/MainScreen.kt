@@ -24,6 +24,8 @@ import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.SolidColor
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.platform.LocalDensity
+import androidx.compose.ui.platform.LocalClipboardManager
+import androidx.compose.ui.platform.LocalWindowInfo
 import androidx.compose.ui.platform.testTag
 import androidx.compose.ui.res.painterResource
 import com.example.R
@@ -40,6 +42,7 @@ import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.example.data.database.GitBranchEntity
 import com.example.data.database.ProjectEntity
 import com.example.data.repository.FileNode
+import com.example.ui.AdManager
 import com.example.ui.theme.CodeVisualTransformation
 import com.example.ui.viewmodel.EditorViewModel
 import kotlinx.coroutines.launch
@@ -50,6 +53,18 @@ import java.io.File
 fun MainScreen(viewModel: EditorViewModel) {
     val currentContext = LocalContext.current
     val scope = rememberCoroutineScope()
+
+    // A helper to safely log user actions and show ads after 3-5 operations
+    val logAction = {
+        var context = currentContext
+        while (context is android.content.ContextWrapper) {
+            if (context is android.app.Activity) {
+                AdManager.logUserAction(context)
+                break
+            }
+            context = context.baseContext
+        }
+    }
 
     // --- State collections ---
     val projects by viewModel.projects.collectAsStateWithLifecycle()
@@ -138,7 +153,31 @@ fun MainScreen(viewModel: EditorViewModel) {
         colorScheme = appColorScheme,
         typography = Typography()
     ) {
-        Scaffold(
+        val currentClipboardManager = LocalClipboardManager.current
+        val windowInfo = LocalWindowInfo.current
+        val safeClipboardManager = remember(currentClipboardManager, windowInfo) {
+            object : androidx.compose.ui.platform.ClipboardManager {
+                override fun getText(): androidx.compose.ui.text.AnnotatedString? {
+                    if (!windowInfo.isWindowFocused) return null
+                    return try {
+                        currentClipboardManager.getText()
+                    } catch (e: Exception) {
+                        null
+                    }
+                }
+
+                override fun setText(annotatedString: androidx.compose.ui.text.AnnotatedString) {
+                    if (!windowInfo.isWindowFocused) return
+                    try {
+                        currentClipboardManager.setText(annotatedString)
+                    } catch (e: Exception) {
+                        // Do nothing
+                    }
+                }
+            }
+        }
+        CompositionLocalProvider(LocalClipboardManager provides safeClipboardManager) {
+            Scaffold(
             topBar = {
                 Column {
                     CenterAlignedTopAppBar(
@@ -191,6 +230,7 @@ fun MainScreen(viewModel: EditorViewModel) {
                                     viewModel.saveActiveFileExplicitly {
                                         Toast.makeText(currentContext, "File saved successfully", Toast.LENGTH_SHORT).show()
                                     }
+                                    logAction()
                                 }) {
                                     Icon(Icons.Default.PlayArrow, contentDescription = "Save and Run Code", tint = Color(0xFFD0BCFF))
                                 }
@@ -223,7 +263,10 @@ fun MainScreen(viewModel: EditorViewModel) {
                         val isSelected = activePanel == index
                         NavigationBarItem(
                             selected = isSelected,
-                            onClick = { viewModel.setActivePanel(index) },
+                            onClick = { 
+                                viewModel.setActivePanel(index)
+                                logAction()
+                            },
                             icon = {
                                 when (icon) {
                                     is androidx.compose.ui.graphics.vector.ImageVector -> Icon(icon, contentDescription = label)
@@ -298,6 +341,7 @@ fun MainScreen(viewModel: EditorViewModel) {
                 onConfirm = { name ->
                     viewModel.createNewFile(name)
                     showNewFileDialog = false
+                    logAction()
                 },
                 onDismiss = { showNewFileDialog = false }
             )
@@ -310,6 +354,7 @@ fun MainScreen(viewModel: EditorViewModel) {
                 onConfirm = { name ->
                     viewModel.createNewFolder(name)
                     showNewFolderDialog = false
+                    logAction()
                 },
                 onDismiss = { showNewFolderDialog = false }
             )
@@ -322,6 +367,7 @@ fun MainScreen(viewModel: EditorViewModel) {
                 onConfirm = { name ->
                     viewModel.createProject(name)
                     showNewProjectDialog = false
+                    logAction()
                 },
                 onDismiss = { showNewProjectDialog = false }
             )
@@ -334,6 +380,7 @@ fun MainScreen(viewModel: EditorViewModel) {
                 onConfirm = { name ->
                     viewModel.createGitBranch(name)
                     showGitBranchDialog = false
+                    logAction()
                 },
                 onDismiss = { showGitBranchDialog = false }
             )
@@ -346,6 +393,7 @@ fun MainScreen(viewModel: EditorViewModel) {
                 onSelect = {
                     viewModel.selectProject(it)
                     showProjectSelectDialog = false
+                    logAction()
                 },
                 onDelete = { viewModel.deleteProject(it) },
                 onFavorite = { viewModel.toggleFavorite(it) },
@@ -355,6 +403,7 @@ fun MainScreen(viewModel: EditorViewModel) {
                 },
                 onDismiss = { showProjectSelectDialog = false }
             )
+        }
         }
     }
 }
@@ -606,6 +655,7 @@ fun ExplorerTab(
                                 viewModel.commitGitChanges(gitCommitMessage)
                                 gitCommitMessage = ""
                                 Toast.makeText(currentContext, "Changes committed successfully!", Toast.LENGTH_SHORT).show()
+                                AdManager.logUserAction(currentContext)
                             }
                         },
                         modifier = Modifier.align(Alignment.End),
@@ -1240,6 +1290,7 @@ fun PreviewTab(viewModel: EditorViewModel) {
 // ==========================================
 @Composable
 fun AiTab(viewModel: EditorViewModel) {
+    val context = LocalContext.current
     val messages by viewModel.chatMessages.collectAsStateWithLifecycle()
     val input by viewModel.chatInput.collectAsStateWithLifecycle()
     val isLoading by viewModel.isAiLoading.collectAsStateWithLifecycle()
@@ -1360,7 +1411,10 @@ fun AiTab(viewModel: EditorViewModel) {
             )
             Spacer(Modifier.width(8.dp))
             FloatingActionButton(
-                onClick = { viewModel.sendChatMessage() },
+                onClick = { 
+                    viewModel.sendChatMessage()
+                    AdManager.logUserAction(context)
+                },
                 shape = CircleShape,
                 modifier = Modifier.size(48.dp),
                 containerColor = MaterialTheme.colorScheme.primary
@@ -1376,6 +1430,7 @@ fun AiTab(viewModel: EditorViewModel) {
 // ==========================================
 @Composable
 fun TerminalTab(viewModel: EditorViewModel) {
+    val context = LocalContext.current
     val terminalInput by viewModel.terminalInput.collectAsStateWithLifecycle()
     val terminalLogs by viewModel.terminalLogs.collectAsStateWithLifecycle()
 
@@ -1439,7 +1494,10 @@ fun TerminalTab(viewModel: EditorViewModel) {
                         }
                     )
                     IconButton(
-                        onClick = { viewModel.submitTerminalCommand() },
+                        onClick = {
+                            viewModel.submitTerminalCommand()
+                            AdManager.logUserAction(context)
+                        },
                         modifier = Modifier.size(24.dp)
                     ) {
                         Icon(Icons.Default.PlayArrow, contentDescription = "Run", tint = MaterialTheme.colorScheme.primary)
