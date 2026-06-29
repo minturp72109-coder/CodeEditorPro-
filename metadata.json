@@ -1,6 +1,6 @@
 {
   "name": "Code Editor",
-  "description": "A lightweight, powerful Android code editor with syntax highlighting, live HTML and Markdown previews, project-wide search, Git commits, local terminal shell, and built-in Gemini AI code companion.",
+  "description": "A lightweight, powerful Android code editor with syntax highlighting, live HTML and Markdown previews, project-wide search, Git commits, local terminal shell, and built-in AI Copilot code companion.",
   "requestFramePermissions": [],
   "majorCapabilities": ["MAJOR_CAPABILITY_SERVER_SIDE_GEMINI_API"]
 }

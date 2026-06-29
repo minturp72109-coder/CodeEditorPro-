@@ -79,7 +79,7 @@ class EditorViewModel(application: Application) : AndroidViewModel(application) 
     // AI Chat History
     data class ChatMessage(val text: String, val isUser: Boolean, val timestamp: Long = System.currentTimeMillis())
     private val _chatMessages = MutableStateFlow<List<ChatMessage>>(
-        listOf(ChatMessage("Hello! I am your Gemini AI coding companion. Ask me to complete code, optimize, explain, or generate new templates!", false))
+        listOf(ChatMessage("Hello! I am your AI Copilot coding companion. Ask me to complete code, optimize, explain, or generate new templates!", false))
     )
     val chatMessages: StateFlow<List<ChatMessage>> = _chatMessages.asStateFlow()
     val chatInput = MutableStateFlow("")
@@ -523,7 +523,7 @@ class EditorViewModel(application: Application) : AndroidViewModel(application) 
     }
 
     fun clearChat() {
-        _chatMessages.value = listOf(ChatMessage("Hello! I am your Gemini AI coding companion. Ask me to complete code, optimize, explain, or generate new templates!", false))
+        _chatMessages.value = listOf(ChatMessage("Hello! I am your AI Copilot coding companion. Ask me to complete code, optimize, explain, or generate new templates!", false))
     }
 
     // --- Quick Inline AI Operations ---

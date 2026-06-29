@@ -961,7 +961,7 @@ fun EditorTab(
                     Row(verticalAlignment = Alignment.CenterVertically) {
                         Icon(Icons.Default.Build, contentDescription = null, modifier = Modifier.size(12.dp))
                         Spacer(Modifier.width(4.dp))
-                        Text("Gemini Fix", fontSize = 10.sp, fontWeight = FontWeight.Bold)
+                        Text("AI Copilot Fix", fontSize = 10.sp, fontWeight = FontWeight.Bold)
                     }
                 }
             }
@@ -1315,7 +1315,7 @@ fun AiTab(viewModel: EditorViewModel) {
             horizontalArrangement = Arrangement.SpaceBetween,
             verticalAlignment = Alignment.CenterVertically
         ) {
-            Text("Gemini Code Assistant", fontSize = 16.sp, fontWeight = FontWeight.Bold, color = MaterialTheme.colorScheme.onSurface)
+            Text("AI Copilot Code Assistant", fontSize = 16.sp, fontWeight = FontWeight.Bold, color = MaterialTheme.colorScheme.onSurface)
             IconButton(onClick = { viewModel.clearChat() }) {
                 Icon(Icons.Default.Delete, contentDescription = "Clear Chat", tint = MaterialTheme.colorScheme.primary)
             }
@@ -1401,7 +1401,7 @@ fun AiTab(viewModel: EditorViewModel) {
                     ) {
                         CircularProgressIndicator(modifier = Modifier.size(16.dp), strokeWidth = 2.dp)
                         Spacer(Modifier.width(8.dp))
-                        Text("Gemini is analyzing...", fontSize = 11.sp, color = MaterialTheme.colorScheme.primary)
+                        Text("AI Copilot is analyzing...", fontSize = 11.sp, color = MaterialTheme.colorScheme.primary)
                     }
                 }
             }
@@ -1417,7 +1417,7 @@ fun AiTab(viewModel: EditorViewModel) {
             OutlinedTextField(
                 value = input,
                 onValueChange = { viewModel.chatInput.value = it },
-                placeholder = { Text("Ask Gemini...", fontSize = 13.sp) },
+                placeholder = { Text("Ask AI Copilot...", fontSize = 13.sp) },
                 modifier = Modifier.weight(1f),
                 shape = RoundedCornerShape(24.dp),
                 textStyle = TextStyle(fontSize = 13.sp),
