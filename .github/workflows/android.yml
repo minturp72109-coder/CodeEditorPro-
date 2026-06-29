@@ -8,7 +8,7 @@ on:
 
 jobs:
   build:
-    name: Build Debug APK
+    name: Build Release Package
     runs-on: ubuntu-latest
 
     permissions:
@@ -29,17 +29,36 @@ jobs:
       with:
         gradle-version: '9.3.1'
 
-    - name: Build Debug APK
-      run: gradle assembleDebug
+    - name: Generate Release Keystore
+      run: |
+        if [ ! -f my-upload-key.jks ]; then
+          keytool -genkeypair -v \
+            -keystore my-upload-key.jks \
+            -keyalg RSA \
+            -keysize 2048 \
+            -validity 10000 \
+            -alias upload \
+            -storepass "${{ secrets.STORE_PASSWORD || 'android' }}" \
+            -keypass "${{ secrets.KEY_PASSWORD || 'android' }}" \
+            -dname "CN=Android,OU=AIStudio,O=Google,L=MV,S=CA,C=US"
+        fi
+
+    - name: Build Release APK & AAB
+      run: gradle assembleRelease bundleRelease
+      env:
+        STORE_PASSWORD: ${{ secrets.STORE_PASSWORD || 'android' }}
+        KEY_PASSWORD: ${{ secrets.KEY_PASSWORD || 'android' }}
 
     - name: Create or Update GitHub Release
       uses: softprops/action-gh-release@v2
       with:
         tag_name: "latest"
-        name: "Latest Debug Build"
-        body: "Automated debug APK build from the latest commit."
+        name: "Latest Release Build"
+        body: "Automated release build (APK & AAB) from the latest commit."
         draft: false
         prerelease: false
-        files: app/build/outputs/apk/debug/app-debug.apk
+        files: |
+          app/build/outputs/apk/release/app-release.apk
+          app/build/outputs/bundle/release/app-release.aab
       env:
         GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
