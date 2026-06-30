@@ -196,7 +196,7 @@ fun MainScreen(viewModel: EditorViewModel) {
                                 }
                                 Column {
                                     Text(
-                                        text = "CodePad Pro",
+                                        text = "Code Editor Pro",
                                         fontSize = 14.sp,
                                         fontWeight = FontWeight.Bold,
                                         color = Color(0xFFE6E1E5)
