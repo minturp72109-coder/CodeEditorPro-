@@ -29,25 +29,21 @@ jobs:
       with:
         gradle-version: '9.3.1'
 
-    - name: Generate Release Keystore
+    - name: Prepare Keystore File
       run: |
-        if [ ! -f my-upload-key.jks ]; then
-          keytool -genkeypair -v \
-            -keystore my-upload-key.jks \
-            -keyalg RSA \
-            -keysize 2048 \
-            -validity 10000 \
-            -alias upload \
-            -storepass "${{ secrets.STORE_PASSWORD || 'android' }}" \
-            -keypass "${{ secrets.KEY_PASSWORD || 'android' }}" \
-            -dname "CN=Android,OU=AIStudio,O=Google,L=MV,S=CA,C=US"
+        if [ -z "${{ secrets.KEYSTORE_BASE64 }}" ]; then
+          echo "Error: KEYSTORE_BASE64 secret is not set!"
+          exit 1
         fi
+        echo "Decoding keystore from secrets.KEYSTORE_BASE64..."
+        echo "${{ secrets.KEYSTORE_BASE64 }}" | base64 --decode > my-upload-key.jks
 
     - name: Build Release APK & AAB
       run: gradle assembleRelease bundleRelease
       env:
-        STORE_PASSWORD: ${{ secrets.STORE_PASSWORD || 'android' }}
-        KEY_PASSWORD: ${{ secrets.KEY_PASSWORD || 'android' }}
+        KEYSTORE_PATH: "my-upload-key.jks"
+        STORE_PASSWORD: ${{ secrets.STORE_PASSWORD }}
+        KEY_PASSWORD: ${{ secrets.KEY_PASSWORD }}
 
     - name: Create or Update GitHub Release
       uses: softprops/action-gh-release@v2

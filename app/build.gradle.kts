@@ -26,18 +26,23 @@ android {
   signingConfigs {
     create("release") {
       val keystorePath = System.getenv("KEYSTORE_PATH") ?: "${rootDir}/my-upload-key.jks"
-      val kFile = file(keystorePath)
-      if (kFile.exists()) {
-        storeFile = kFile
-        storePassword = System.getenv("STORE_PASSWORD")
-        keyAlias = "upload"
-        keyPassword = System.getenv("KEY_PASSWORD")
-      } else {
-        storeFile = file("${rootDir}/debug.keystore")
-        storePassword = "android"
-        keyAlias = "androiddebugkey"
-        keyPassword = "android"
+      storeFile = file(keystorePath)
+      
+      // Load password dynamically from keystore_credentials.txt if it exists to avoid hardcoding in build.gradle.kts
+      val credentialsFile = file("${rootDir}/keystore_credentials.txt")
+      var localPassword = ""
+      if (credentialsFile.exists()) {
+        val lines = credentialsFile.readLines()
+        for (line in lines) {
+          if (line.startsWith("Password: ")) {
+            localPassword = line.substringAfter("Password: ").trim()
+          }
+        }
       }
+      
+      storePassword = System.getenv("STORE_PASSWORD") ?: localPassword
+      keyAlias = "upload"
+      keyPassword = System.getenv("KEY_PASSWORD") ?: localPassword
     }
     val debugKeystore = file("${rootDir}/debug.keystore")
     if (debugKeystore.exists()) {
