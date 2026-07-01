@@ -42,22 +42,19 @@ import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.example.data.database.GitBranchEntity
 import com.example.data.database.ProjectEntity
 import com.example.data.repository.FileNode
-import com.example.ui.AdManager
 import com.example.ui.theme.CodeVisualTransformation
 import com.example.ui.viewmodel.EditorViewModel
 import kotlinx.coroutines.launch
 import java.io.File
+
+// A helper to safely log user actions (no-op after removing AdMob)
+fun logAction() {}
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun MainScreen(viewModel: EditorViewModel) {
     val currentContext = LocalContext.current
     val scope = rememberCoroutineScope()
-
-    // A helper to safely log user actions
-    val logAction = {
-        AdManager.logUserAction(currentContext)
-    }
 
     // --- State collections ---
     val projects by viewModel.projects.collectAsStateWithLifecycle()
@@ -229,9 +226,7 @@ fun MainScreen(viewModel: EditorViewModel) {
                                 }
                             }
                             IconButton(onClick = {
-                                AdManager.showAdIfEligible(currentContext) {
-                                    showSettingsDialog = true
-                                }
+                                showSettingsDialog = true
                             }) {
                                 Icon(Icons.Default.Settings, contentDescription = "Editor Settings", tint = Color(0xFFE6E1E5))
                             }
@@ -261,13 +256,7 @@ fun MainScreen(viewModel: EditorViewModel) {
                         NavigationBarItem(
                             selected = isSelected,
                             onClick = { 
-                                if (index == 0 && activePanel != 0) {
-                                    AdManager.showAdIfEligible(currentContext) {
-                                        viewModel.setActivePanel(0)
-                                    }
-                                } else {
-                                    viewModel.setActivePanel(index)
-                                }
+                                viewModel.setActivePanel(index)
                                 logAction()
                             },
                             icon = {
@@ -395,9 +384,7 @@ fun MainScreen(viewModel: EditorViewModel) {
                 activeProject = activeProject,
                 onSelect = {
                     showProjectSelectDialog = false
-                    AdManager.showAdIfEligible(currentContext) {
-                        viewModel.selectProject(it)
-                    }
+                    viewModel.selectProject(it)
                     logAction()
                 },
                 onDelete = { viewModel.deleteProject(it) },
@@ -586,9 +573,6 @@ fun ExplorerTab(
                                 activeProject?.let {
                                     // Make a mock trigger for import/export zip
                                     viewModel.createProject("Imported Zip Project")
-                                    AdManager.showAdIfEligible(currentContext) {
-                                        // Completed import flow
-                                    }
                                 }
                             },
                             contentPadding = PaddingValues(horizontal = 12.dp, vertical = 6.dp),
@@ -604,9 +588,6 @@ fun ExplorerTab(
                                 viewModel.exportActiveProjectToZip(dest) { ok ->
                                     if (ok) {
                                         Toast.makeText(currentContext, "Exported successfully to: ${dest.name}", Toast.LENGTH_LONG).show()
-                                        AdManager.showAdIfEligible(currentContext) {
-                                            // Completed export flow
-                                        }
                                     } else {
                                         Toast.makeText(currentContext, "Export failure", Toast.LENGTH_SHORT).show()
                                     }
@@ -669,7 +650,7 @@ fun ExplorerTab(
                                 viewModel.commitGitChanges(gitCommitMessage)
                                 gitCommitMessage = ""
                                 Toast.makeText(currentContext, "Changes committed successfully!", Toast.LENGTH_SHORT).show()
-                                AdManager.logUserAction(currentContext)
+                                logAction()
                             }
                         },
                         modifier = Modifier.align(Alignment.End),
@@ -1427,7 +1408,6 @@ fun AiTab(viewModel: EditorViewModel) {
             FloatingActionButton(
                 onClick = { 
                     viewModel.sendChatMessage()
-                    AdManager.logUserAction(context)
                 },
                 shape = CircleShape,
                 modifier = Modifier.size(48.dp),
@@ -1510,7 +1490,6 @@ fun TerminalTab(viewModel: EditorViewModel) {
                     IconButton(
                         onClick = {
                             viewModel.submitTerminalCommand()
-                            AdManager.logUserAction(context)
                         },
                         modifier = Modifier.size(24.dp)
                     ) {

@@ -1,1 +1,9 @@
 /build
+
+# Keystore and signing credentials
+debug.keystore
+my-upload-key.jks
+keystore_credentials.txt
+my_upload_key_base64.txt
+*.jks
+*.keystore
